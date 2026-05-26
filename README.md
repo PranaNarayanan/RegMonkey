@@ -1,4 +1,5 @@
 # RegMonkey
+<<<<<<< HEAD
 
 RegMonkey is an early-stage research prototype for lightweight verification of regression outputs under disclosure constraints.
 
@@ -61,3 +62,6 @@ This prototype is intended as a lightweight attestation layer between blind trus
 ## License
 
 MIT
+=======
+RegMonkey is a prototype framework for lightweight verification of empirical regression models under data disclosure constraints.
+>>>>>>> d8a14036502eb57ff4b3c584f4717677478c4076
