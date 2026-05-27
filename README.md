@@ -18,7 +18,7 @@ The current prototype supports:
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/regmonkey.git
+git clone https://github.com/PranaNarayanan/RegMonkey.git
 cd regmonkey
 ```
 
@@ -30,12 +30,32 @@ pip install numpy
 
 ---
 
+# Command-Line Wrappers
+
+RegMonkey includes lightweight Windows batch wrappers for cleaner usage.
+
+Instead of:
+
+```bash
+python certify.py ...
+python verify.py ...
+```
+
+you can use:
+
+```bash
+regmonkey-certify ...
+regmonkey-verify ...
+```
+
+---
+
 # Basic Usage
 
 Generate a certificate:
 
 ```bash
-python certify.py \
+regmonkey-certify \
   --data examples/toy_data.csv \
   --model "y ~ x" \
   --model-id toy_model \
@@ -45,7 +65,7 @@ python certify.py \
 Verify certificate:
 
 ```bash
-python verify.py certificate.json
+regmonkey-verify certificate.json
 ```
 
 Expected output:
@@ -104,7 +124,7 @@ x1,x2,y
 Generate certificate:
 
 ```bash
-python certify.py \
+regmonkey-certify \
   --data examples/interaction_data.csv \
   --model "y ~ x1 + x2 + x1*x2" \
   --model-id interaction_demo \
@@ -114,7 +134,7 @@ python certify.py \
 Verify:
 
 ```bash
-python verify.py interaction_certificate.json
+regmonkey-verify interaction_certificate.json
 ```
 
 ---
@@ -141,7 +161,7 @@ C,3,36
 Generate certificate:
 
 ```bash
-python certify.py \
+regmonkey-certify \
   --data examples/fe_data.csv \
   --model "y ~ x" \
   --fe subject \
@@ -152,7 +172,7 @@ python certify.py \
 Verify:
 
 ```bash
-python verify.py fe_certificate.json
+regmonkey-verify fe_certificate.json
 ```
 
 ---
@@ -164,14 +184,14 @@ RegMonkey supports optional dataset consistency verification.
 Verify against expected dataset hash:
 
 ```bash
-python verify.py certificate.json \
+regmonkey-verify certificate.json \
   --expected-data-hash abc123...
 ```
 
 Or recompute hash directly from dataset:
 
 ```bash
-python verify.py certificate.json \
+regmonkey-verify certificate.json \
   --data confidential_dataset.csv
 ```
 
