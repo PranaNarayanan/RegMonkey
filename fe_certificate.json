@@ -1,0 +1,46 @@
+{
+  "payload": {
+    "certificate_type": "regmonkey_ols_v0_2",
+    "model_id": "fe_demo",
+    "dataset_hash_sha256": "b8ef3199f742b85bc9f560a3fd17874f876030f1de59fc37c4d2f3c3abdd7da5",
+    "model_specification": {
+      "model_type": "OLS",
+      "formula": "y ~ x",
+      "outcome": "y",
+      "terms": [
+        "x"
+      ],
+      "intercept": false,
+      "fixed_effect": "subject",
+      "transformation": "within_demeaning"
+    },
+    "n_observations": 9,
+    "n_parameters": 1,
+    "coefficient_names": [
+      "x"
+    ],
+    "reported_coefficients": {
+      "x": 2.0
+    },
+    "sufficient_statistics": {
+      "xtx": [
+        [
+          6.0
+        ]
+      ],
+      "xty": [
+        12.0
+      ],
+      "rss": 0.0
+    },
+    "verification_claim": {
+      "coefficient_condition": "XTX_beta_equals_XTy",
+      "tolerance": 1e-08
+    },
+    "generated_by": "regmonkey v0.2"
+  },
+  "signature": {
+    "scheme": "HMAC-SHA256-demo",
+    "value": "7051d23481733f1878d415226cde11a581bcc695f137f804a4d339a475dabae8"
+  }
+}

@@ -27,48 +27,118 @@ def sign_payload(payload, secret=DEFAULT_SECRET):
     return hmac.new(secret, canonical_json(payload), hashlib.sha256).hexdigest()
 
 
-def read_csv_numeric(path, outcome, predictors):
-    rows = []
+def parse_model(model):
+    if "~" not in model:
+        raise ValueError('Model must look like: "y ~ x1 + x2"')
+
+    lhs, rhs = model.split("~", 1)
+    outcome = lhs.strip()
+    raw_terms = [x.strip() for x in rhs.split("+") if x.strip()]
+
+    if not outcome:
+        raise ValueError("Missing outcome before ~")
+    if not raw_terms:
+        raise ValueError("Missing predictors after ~")
+
+    terms = []
+    for term in raw_terms:
+        if "*" in term:
+            parts = [p.strip() for p in term.split("*") if p.strip()]
+            if len(parts) != 2:
+                raise ValueError("Only two-way interactions like x1*x2 are supported.")
+            for p in parts:
+                if p not in terms:
+                    terms.append(p)
+            interaction = f"{parts[0]}*{parts[1]}"
+            if interaction not in terms:
+                terms.append(interaction)
+        else:
+            if term not in terms:
+                terms.append(term)
+
+    return outcome, terms
+
+
+def read_csv_rows(path):
     with open(path, newline="") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            rows.append(row)
+        rows = list(csv.DictReader(f))
 
     if not rows:
         raise ValueError("CSV has no data rows.")
 
-    y = np.array([float(row[outcome]) for row in rows], dtype=float)
+    return rows
 
-    X_cols = [np.ones(len(rows))]
-    column_names = ["Intercept"]
 
-    for pred in predictors:
-        X_cols.append(np.array([float(row[pred]) for row in rows], dtype=float))
-        column_names.append(pred)
+def get_numeric_column(rows, name):
+    return np.array([float(row[name]) for row in rows], dtype=float)
+
+
+def build_term(rows, term):
+    if "*" in term:
+        left, right = [x.strip() for x in term.split("*")]
+        return get_numeric_column(rows, left) * get_numeric_column(rows, right)
+    return get_numeric_column(rows, term)
+
+
+def within_demean(X, y, groups):
+    X_dm = X.copy()
+    y_dm = y.copy()
+
+    for g in sorted(set(groups)):
+        idx = np.array([group == g for group in groups])
+        y_dm[idx] = y[idx] - y[idx].mean()
+        X_dm[idx, :] = X[idx, :] - X[idx, :].mean(axis=0)
+
+    return X_dm, y_dm
+
+
+def build_arrays(rows, outcome, terms, fe=None):
+    y = get_numeric_column(rows, outcome)
+
+    X_cols = []
+    column_names = []
+
+    if fe is None:
+        X_cols.append(np.ones(len(rows)))
+        column_names.append("Intercept")
+
+    for term in terms:
+        X_cols.append(build_term(rows, term))
+        column_names.append(term)
 
     X = np.column_stack(X_cols)
+
+    if fe is not None:
+        groups = [row[fe] for row in rows]
+        X, y = within_demean(X, y, groups)
+
     return X, y, column_names
 
 
-def make_certificate(data_path, outcome, predictors, model_id):
-    X, y, column_names = read_csv_numeric(data_path, outcome, predictors)
+def make_certificate(data_path, model, model_id, fe=None):
+    outcome, terms = parse_model(model)
+    rows = read_csv_rows(data_path)
+    X, y, column_names = build_arrays(rows, outcome, terms, fe=fe)
 
     xtx = X.T @ X
     xty = X.T @ y
 
-    beta = np.linalg.solve(xtx, xty)
+    beta = np.linalg.lstsq(xtx, xty, rcond=None)[0]
     residuals = y - X @ beta
     rss = float(residuals.T @ residuals)
 
     payload = {
-        "certificate_type": "regmonkey_ols_v0_1",
+        "certificate_type": "regmonkey_ols_v0_2",
         "model_id": model_id,
         "dataset_hash_sha256": sha256_file(data_path),
         "model_specification": {
             "model_type": "OLS",
+            "formula": model,
             "outcome": outcome,
-            "predictors": predictors,
-            "intercept": True
+            "terms": terms,
+            "intercept": fe is None,
+            "fixed_effect": fe,
+            "transformation": "within_demeaning" if fe else "none"
         },
         "n_observations": int(X.shape[0]),
         "n_parameters": int(X.shape[1]),
@@ -85,10 +155,10 @@ def make_certificate(data_path, outcome, predictors, model_id):
             "coefficient_condition": "XTX_beta_equals_XTy",
             "tolerance": 1e-8
         },
-        "generated_by": "regmonkey v0.1"
+        "generated_by": "regmonkey v0.2"
     }
 
-    certificate = {
+    return {
         "payload": payload,
         "signature": {
             "scheme": "HMAC-SHA256-demo",
@@ -96,14 +166,14 @@ def make_certificate(data_path, outcome, predictors, model_id):
         }
     }
 
-    return certificate
-
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate a RegMonkey OLS verification certificate.")
+    parser = argparse.ArgumentParser(
+        description="Generate a RegMonkey OLS verification certificate."
+    )
     parser.add_argument("--data", required=True, help="Path to analysis-ready CSV dataset.")
-    parser.add_argument("--outcome", required=True, help="Outcome variable name.")
-    parser.add_argument("--predictors", nargs="+", required=True, help="Predictor variable names.")
+    parser.add_argument("--model", required=True, help='Formula, e.g. "y ~ x1 + x2 + x1*x2"')
+    parser.add_argument("--fe", default=None, help="Optional one-way fixed effect column, e.g. subject")
     parser.add_argument("--model-id", default="model_1", help="Model identifier.")
     parser.add_argument("--out", default="certificate.json", help="Output certificate path.")
 
@@ -111,9 +181,9 @@ def main():
 
     cert = make_certificate(
         data_path=Path(args.data),
-        outcome=args.outcome,
-        predictors=args.predictors,
-        model_id=args.model_id
+        model=args.model,
+        model_id=args.model_id,
+        fe=args.fe
     )
 
     with open(args.out, "w") as f:

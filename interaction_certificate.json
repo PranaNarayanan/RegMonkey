@@ -1,0 +1,78 @@
+{
+  "payload": {
+    "certificate_type": "regmonkey_ols_v0_2",
+    "model_id": "interaction_demo",
+    "dataset_hash_sha256": "fa816600fa24cfafd59a340c0e88e235aa9e1b19fe0f8ba8a24af38a8c35acbf",
+    "model_specification": {
+      "model_type": "OLS",
+      "formula": "y ~ x1 + x2 + x1*x2",
+      "outcome": "y",
+      "terms": [
+        "x1",
+        "x2",
+        "x1*x2"
+      ],
+      "intercept": true,
+      "fixed_effect": null,
+      "transformation": "none"
+    },
+    "n_observations": 6,
+    "n_parameters": 4,
+    "coefficient_names": [
+      "Intercept",
+      "x1",
+      "x2",
+      "x1*x2"
+    ],
+    "reported_coefficients": {
+      "Intercept": -3.644886005920771e-14,
+      "x1": 2.000000000000016,
+      "x2": 2.0000000000000355,
+      "x1*x2": 0.9999999999999862
+    },
+    "sufficient_statistics": {
+      "xtx": [
+        [
+          6.0,
+          12.0,
+          3.0,
+          6.0
+        ],
+        [
+          12.0,
+          28.0,
+          6.0,
+          14.0
+        ],
+        [
+          3.0,
+          6.0,
+          3.0,
+          6.0
+        ],
+        [
+          6.0,
+          14.0,
+          6.0,
+          14.0
+        ]
+      ],
+      "xty": [
+        36.0,
+        82.0,
+        24.0,
+        54.0
+      ],
+      "rss": 6.366107505133565e-28
+    },
+    "verification_claim": {
+      "coefficient_condition": "XTX_beta_equals_XTy",
+      "tolerance": 1e-08
+    },
+    "generated_by": "regmonkey v0.2"
+  },
+  "signature": {
+    "scheme": "HMAC-SHA256-demo",
+    "value": "dc7bfe0cab462d3a76452c55c3be0f4f7495e6138f56e0d9548281f2a5b4feaa"
+  }
+}
